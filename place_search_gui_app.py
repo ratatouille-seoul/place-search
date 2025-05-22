@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -104,7 +105,7 @@ if st.button("검색 시작"):
     "사당", "서원", "사찰", "성당", "성지", "유적", "사적지", "문화재", "탑", "불상",
     "항", "부두", "출입문", "방면", "전철역", "역세권",
     "문화마을", "벽화마을", "돌담길", "골목길", "회랑", "루트"
-]  
+     ]
         result = search_places(x, y, radius, keywords)
         if result:
             df = pd.DataFrame(result)
