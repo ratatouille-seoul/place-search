@@ -10,34 +10,33 @@ import re
 # === 사용자 설정 ===
 KAKAO_API_KEY = '9413618fb8b362446e851b5ddd0e990c'
 
-# === 함수 정의 ===
-def get_coordinates(place_name):
-    query = quote(place_name)
-    url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
+# === 지번주소 조회 함수 ===
+def get_jibun_address(x, y):
+    url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
     headers = {
-        "Authorization": f"KakaoAK {KAKAO_API_KEY}",
-        "Accept-Charset": "utf-8"
+        "Authorization": f"KakaoAK {KAKAO_API_KEY}"
     }
     res = requests.get(url, headers=headers)
     if res.status_code != 200:
-        st.error(f"[좌표 오류] 요청 실패: {res.status_code}")
-        st.text(res.text)
-        return None, None
-    documents = res.json().get("documents", [])
-    if not documents:
-        return None, None
-    return float(documents[0]['x']), float(documents[0]['y'])
+        return ""
+    result = res.json()
+    try:
+        return result['documents'][0]['address']['address_name']
+    except (KeyError, IndexError):
+        return ""
 
-def extract_address_parts(road_address):
+# === 주소 구성 요소 추출 함수 ===
+def extract_address_parts(road_address, jibun_address):
     si = gu = dong = eup = myeon = ri = road = ""
+
     # 시/도, 구/군
     match1 = re.search(r'(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[\s]*([\w가-힣]+구|[\w가-힣]+군)?', road_address)
     if match1:
         si = match1.group(1) or ""
         gu = match1.group(2) or ""
 
-    # 동/읍/면/리
-    match2 = re.search(r'(\w+[동읍면리])', road_address)
+    # 동/읍/면/리 (지번주소에서 보완)
+    match2 = re.search(r'([\w가-힣]+(동|읍|면|리))', jibun_address)
     if match2:
         if '동' in match2.group(1):
             dong = match2.group(1)
@@ -55,6 +54,7 @@ def extract_address_parts(road_address):
 
     return si, gu, dong, eup, myeon, ri, road
 
+# === 장소 검색 함수 ===
 def search_places(x, y, radius, keywords):
     headers = {
         "Authorization": f"KakaoAK {KAKAO_API_KEY}",
@@ -77,7 +77,8 @@ def search_places(x, y, radius, keywords):
             if not documents:
                 break
             for item in documents:
-                si, gu, dong, eup, myeon, ri, road = extract_address_parts(item['road_address_name'])
+                jibun_address = get_jibun_address(item['x'], item['y'])
+                si, gu, dong, eup, myeon, ri, road = extract_address_parts(item['road_address_name'], jibun_address)
                 all_places.append({
                     '검색어': keyword,
                     '시': si,
