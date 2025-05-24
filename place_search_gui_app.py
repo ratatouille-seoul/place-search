@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 import streamlit as st
 import requests
@@ -5,6 +9,7 @@ import pandas as pd
 import time
 from urllib.parse import quote
 from datetime import datetime
+import re
 
 # === 사용자 설정 ===
 KAKAO_API_KEY = '9413618fb8b362446e851b5ddd0e990c'
@@ -26,6 +31,16 @@ def get_coordinates(place_name):
     if not documents:
         return None, None
     return float(documents[0]['x']), float(documents[0]['y'])
+
+def extract_address_parts(road_address):
+    si = gu = dong = road = ""
+    match = re.match(r"(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)?\s*([\w가-힣]+구)?\s*([\w가-힣]+(동|읍|면|리))?\s*([\w가-힣0-9]+로)?", road_address)
+    if match:
+        si = match.group(1) if match.group(1) else ""
+        gu = match.group(2) if match.group(2) else ""
+        dong = match.group(3) if match.group(3) else ""
+        road = match.group(5) if match.group(5) else ""
+    return si+gu, dong, road
 
 def search_places(x, y, radius, keywords):
     headers = {
@@ -49,8 +64,12 @@ def search_places(x, y, radius, keywords):
             if not documents:
                 break
             for item in documents:
+                si_gu, dong, road = extract_address_parts(item['road_address_name'])
                 all_places.append({
                     '검색어': keyword,
+                    '시/구': si_gu,
+                    '동/면/읍/리': dong,
+                    '도로명': road,
                     '장소명': item['place_name'],
                     '주소': item['road_address_name'],
                     '위도': item['y'],
@@ -72,7 +91,7 @@ if st.button("검색 시작"):
     if x is None or y is None:
         st.error("❌ 장소를 찾을 수 없습니다. 정확히 입력해주세요.")
     else:
-        keywords = [
+        keywords =  [
     "가", "강", "건", "경", "계", "고", "곡", "공", "관", "광", "교", "구", "국", "군", "금", "기",
     "길", "나", "낙", "남", "내", "노", "누", "다", "단", "당", "대", "덕", "도", "동", "두", "등",
     "라", "로", "리", "마", "만", "명", "모", "무", "문", "미", "민", "박", "반", "방", "배", "백",
