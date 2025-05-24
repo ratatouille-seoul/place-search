@@ -10,6 +10,23 @@ import re
 # === 사용자 설정 ===
 KAKAO_API_KEY = '9413618fb8b362446e851b5ddd0e990c'
 
+# === 좌표 조회 함수 ===
+def get_coordinates(place_name):
+    query = quote(place_name)
+    url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
+    headers = {
+        "Authorization": f"KakaoAK {KAKAO_API_KEY}",
+        "Accept-Charset": "utf-8"
+    }
+    res = requests.get(url, headers=headers)
+    if res.status_code != 200:
+        st.error(f"[좌표 오류] 요청 실패: {res.status_code}")
+        return None, None
+    documents = res.json().get("documents", [])
+    if not documents:
+        return None, None
+    return float(documents[0]['x']), float(documents[0]['y'])
+
 # === 지번주소 조회 함수 ===
 def get_jibun_address(x, y):
     url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
