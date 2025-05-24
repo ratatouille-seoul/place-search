@@ -107,8 +107,6 @@ def search_places(x, y, radius, keywords):
                     '도로명': road,
                     '장소명': item['place_name'],
                     '주소': item['road_address_name'],
-                    '위도': item['y'],
-                    '경도': item['x']
                 })
             if data['meta'].get('is_end'):
                 break
